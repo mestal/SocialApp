@@ -308,7 +308,7 @@ class SurveyDetailModel {
   int likeCount;
   bool likedByUser;
   
-  SurveyDetailModel.map(Map<String, dynamic> map, List<DocumentSnapshot> questionsP, List<DocumentSnapshot> commentsP)  {
+  SurveyDetailModel.map(Map<String, dynamic> map, List<DocumentSnapshot> questionsP, List<DocumentSnapshot> commentsP, List<UserModel> commentUsers)  {
     id = map['Id'];
     createDate = map['CreateDate'];
     type = map['Type'];
@@ -328,9 +328,8 @@ class SurveyDetailModel {
 
     comments = commentsP.map((comment) {
       
-      return CommentModel.map(comment.data);
+      return CommentModel.map(comment.data, commentUsers);
     }).toList();
-
   }
 }
 
@@ -360,15 +359,22 @@ class QuestionModel {
 
 class CommentModel {
     String message;
-    Timestamp createTime;
+    Timestamp createDate;
     String userId;
+    String userName;
     List<CommentModel> comments;
-    List<LikeModel> likes;
+    List<dynamic> likedUsers;
 
-    CommentModel.map(Map<String, dynamic> map) :
-      message = map['Message'],
-      createTime = map['CreateTime'],
+    CommentModel.map(Map<String, dynamic> map, List<UserModel> commentUsers)
+    {
+    
+      message = map['Message'];
+      createDate = map['CreateDate'];
       userId = map['UserId'];
+      likedUsers = map['LikedUsers'];
+      var user = commentUsers.firstWhere((a) => a.userId == userId);
+      userName = user.name;
+    }
     
 }
 

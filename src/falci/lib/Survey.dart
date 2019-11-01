@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:falci/data/models/FalModel.dart';
 import 'package:falci/ColorLoader.dart';
 import 'package:flutter/rendering.dart';
+import 'package:date_format/date_format.dart';
 
 class Survey extends StatefulWidget {
   final String surveyId;
@@ -45,7 +46,23 @@ class SurveyState extends State<Survey> {
     var survey = await surveyDocument.get();
     var questions = await surveyDocument.collection('Questions').getDocuments();
     var comments = await surveyDocument.collection('Comments').getDocuments();
-    var surveyModel = SurveyDetailModel.map(survey.data, questions.documents, comments.documents);
+
+    List<UserModel> users = new List<UserModel>();
+    for(int i = 0; i < comments.documents.length; i ++)
+    {
+      var userId = comments.documents[i].data["UserId"];
+      var uss = users.where((a) => a.userId == userId);
+      if(uss.length == 0)
+      {
+        var dsUser = Firestore.instance.collection('User').document(userId);
+        var userData = await dsUser.get();
+        var userModel = UserModel.map(userData.data);
+        users.add(userModel);
+      }
+      
+    }
+
+    var surveyModel = SurveyDetailModel.map(survey.data, questions.documents, comments.documents, users);
     this.surveyDetail = surveyModel;
     if(selectedValues.length == 0){
       for(int i = 0; i < surveyModel.questions.length; i ++)
@@ -148,9 +165,9 @@ class SurveyState extends State<Survey> {
                             padding: EdgeInsets.only(left: 5, right: 5.0, top: 5.0),
                             child: Container(
                               height: survey.questions[index].answers[0].picPath?.length > 0 ?
-                                (150 * (survey.questions[index].answers.length / 2)) + 150 + (survey.questions[index].picPath.length > 0 ? 1 : 0) * 200 
+                                (150 * ((survey.questions[index].answers.length / 2) + 1)) + 20 + (survey.questions[index].picPath.length > 0 ? 1 : 0) * 200 
                                 :
-                                ((70 * (survey.questions[index].answers.length)).toDouble() + (survey.questions[index].picPath.length > 0 ? 1 : 0) * 200).toDouble(),
+                                ((70 * (survey.questions[index].answers.length)).toDouble() + (survey.questions[index].picPath.length > 0 ? 1 : 0) * 250).toDouble(),
                           
                               width: double.infinity,
                               alignment: Alignment.center,
@@ -183,7 +200,7 @@ class SurveyState extends State<Survey> {
                                           crossAxisAlignment: CrossAxisAlignment.center,
                                           children: <Widget>[
                                             Container(
-                                              height: 40,
+                                              // height: 60,
                                               //color: Colors.green,
                                               child: new Radio(
                                                 value: indexAnswer,
@@ -192,17 +209,23 @@ class SurveyState extends State<Survey> {
                                               )
                                             ),
                                             Column(
-                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               mainAxisAlignment: MainAxisAlignment.center,
                                               children: <Widget>[
                                                 survey.questions[index].answers[indexAnswer].picPath.length > 0 ?
                                                   Image.network(survey.questions[index].answers[indexAnswer].picPath, width: 100, height: 100) : Container(),//color: Colors.deepPurple),
                                                 survey.questions[index].answers[indexAnswer].answer.length > 0 ?
                                                   Container(
-                                                    child: Text(survey.questions[index].answers[indexAnswer].answer),
+                                                    child: 
+                                                    Text(survey.questions[index].answers[indexAnswer].answer,
+                                                      textAlign: TextAlign.left,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      maxLines: 4,
+                                                      ),
                                                     //color: Colors.blue,
-                                                    alignment: Alignment.center,
-                                                    height: 40
+                                                    alignment: Alignment.centerLeft,
+                                                    // height: 60,
+                                                    width: 250,
                                                   ) : Container(),
                                                 ],
                                               )
@@ -240,7 +263,61 @@ class SurveyState extends State<Survey> {
                         
                   )
                   :
-                  Container()
+                  Container(),
+                  Container(
+                    padding: const EdgeInsets.all(10.0),
+                    child: 
+                      ListView.builder(
+                        shrinkWrap: true,
+                        scrollDirection: Axis.vertical,
+                        physics: ScrollPhysics(),
+                        //controller: _scrollController,
+                        itemCount: survey.comments.length,
+                        itemBuilder: (BuildContext ctx, int index) {
+                          return Padding(
+                            padding: EdgeInsets.only(left: 5, right: 5.0, top: 5.0),
+                            child: Container(
+                              width: double.infinity,
+                              alignment: Alignment.center,
+                              //color: Colors.white,
+                              child: Column(children: <Widget>[
+                                Container(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(survey.comments[index].userName + ";",
+                                    style: TextStyle(
+                                    // color: Colors.grey[800],
+                                    fontWeight: FontWeight.w900,
+                                    //fontStyle: FontStyle.italic,
+                                    // fontFamily: 'Open Sans',
+                                    // fontSize: 40
+                                    ),),
+                                ),
+                                Container(
+                                  alignment: Alignment.bottomLeft,
+                                  child: Text(survey.comments[index].message),
+                                ),
+                                Container(
+                                  alignment: Alignment.bottomLeft,
+                                  child: Text(formatDate(survey.comments[index].createDate.toDate(), [dd, '-', mm, '-', yyyy, ' ', HH, ':', nn]), 
+                                    textAlign: TextAlign.left, 
+                                    style: TextStyle (
+                                      fontFamily: 'Quicksand' ,
+                                      color: Colors.grey,
+                                      fontSize: 12.0,
+                                    ),
+                                  )
+                                ),
+                                Container(
+                                  alignment: Alignment.center,
+                                  child: Row(children: <Widget>[Text("Beğen (" + survey.comments[index].likedUsers.length.toString() + ")"), Text(" - "), Text("Yanıtla")],),
+                                ),
+                              ]
+                            )
+                          ),
+                        );
+                      },
+                    )
+                  ),
                 ],
               ),
             );
