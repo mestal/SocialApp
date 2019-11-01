@@ -309,8 +309,8 @@ class SurveyDetailModel {
   int likeCount;
   bool likedByUser;
   
-  SurveyDetailModel.map(Map<String, dynamic> map, List<DocumentSnapshot> questionsP, List<DocumentSnapshot> commentsP, List<UserModel> commentUsers)  {
-    id = map['Id'];
+  SurveyDetailModel.map(String documentId, Map<String, dynamic> map, List<DocumentSnapshot> questionsP, List<DocumentSnapshot> commentsP, List<UserModel> commentUsers, String loginUserId)  {
+    id = documentId;
     createDate = map['CreateDate'];
     type = map['Type'];
     status = map['Status'];
@@ -329,11 +329,11 @@ class SurveyDetailModel {
 
     comments = commentsP.where((a) => a['ParentId'] == "").map((comment) {
       
-      return CommentModel.map(comment.documentID, comment.data, commentUsers);
+      return CommentModel.map(comment.documentID, comment.data, commentUsers, loginUserId);
     }).toList();
 
     childComments = commentsP.where((a) => a['ParentId'] != "").map((comment) {
-      return CommentModel.map(comment.documentID, comment.data, commentUsers);
+      return CommentModel.map(comment.documentID, comment.data, commentUsers, loginUserId);
     }).toList();
   }
 }
@@ -370,8 +370,9 @@ class CommentModel {
     List<dynamic> likedUsers;
     String parentId;
     String id;
+    bool likedByTheUser;
 
-    CommentModel.map(String documentId, Map<String, dynamic> map, List<UserModel> commentUsers)
+    CommentModel.map(String documentId, Map<String, dynamic> map, List<UserModel> commentUsers, String loginUserId)
     {
       this.id = documentId;
       message = map['Message'];
@@ -381,6 +382,7 @@ class CommentModel {
       parentId = map['ParentId'];
       var user = commentUsers.firstWhere((a) => a.userId == userId);
       userName = user.name;
+      likedByTheUser = likedUsers.where((a) => a.toString() == loginUserId).length > 0;
     }
     
 }

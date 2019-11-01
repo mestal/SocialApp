@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:falci/AuthSingleton.dart';
+import 'package:falci/data/FireStoreHelper.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:falci/data/models/FalModel.dart';
@@ -59,10 +61,9 @@ class SurveyState extends State<Survey> {
         var userModel = UserModel.map(userData.data);
         users.add(userModel);
       }
-      
     }
 
-    var surveyModel = SurveyDetailModel.map(survey.data, questions.documents, comments.documents, users);
+    var surveyModel = SurveyDetailModel.map(survey.documentID, survey.data, questions.documents, comments.documents, users, AuthSingleton.instance.user.uid);
     this.surveyDetail = surveyModel;
     if(selectedValues.length == 0){
       for(int i = 0; i < surveyModel.questions.length; i ++)
@@ -98,6 +99,24 @@ class SurveyState extends State<Survey> {
     }
 
     return true;
+  }
+
+  void likeUnlikeComment(CommentModel commentModel)
+  {
+    bool likeOrUnlike = !commentModel.likedByTheUser;
+    FireStoreHelper.dbHelper.likeUnlikeSurveyComment(surveyDetail.id, commentModel.id, likeOrUnlike, AuthSingleton.instance.user.uid);
+    setState(() {
+      commentModel.likedByTheUser = !commentModel.likedByTheUser;
+      scrollPosition = _scrollController.position.pixels;
+    });
+  }
+
+  void addComment(String message, String parentId)
+  {
+    FireStoreHelper.dbHelper.AddSurveyComment(surveyDetail.id, message, parentId, AuthSingleton.instance.user.uid);
+    setState(() {
+      scrollPosition = _scrollController.position.pixels;
+    });
   }
 
   int findResult()
@@ -309,7 +328,31 @@ class SurveyState extends State<Survey> {
                                 ),
                                 Container(
                                   alignment: Alignment.center,
-                                  child: Row(children: <Widget>[Text("Beğen (" + survey.comments[index].likedUsers.length.toString() + ")"), Text(" - "), Text("Yanıtla")],),
+                                  child: Row(children: <Widget>[
+                                    new Expanded(
+                                      child:
+                                    new FlatButton(
+                                      onPressed: () =>  likeUnlikeComment(survey.comments[index]),
+                                      child: new Container(
+                                        child: new Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: <Widget>[
+                                            new Expanded(
+                                              child: Text(
+                                                "Beğen (" + survey.comments[index].likedUsers.length.toString() + ")",
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                    color: survey.comments[index].likedByTheUser ? Colors.red : Colors.black,
+                                                    fontWeight: survey.comments[index].likedByTheUser ? FontWeight.bold : FontWeight.normal),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )),
+
+                                    Text(" - "), 
+                                    Text("Yanıtla")],),
                                 ),
 
                                 ListView.builder(
@@ -320,7 +363,7 @@ class SurveyState extends State<Survey> {
                                   itemCount: survey.childComments.where((a) => a.parentId == survey.comments[index].id).length,
                                   itemBuilder: (BuildContext ctx, int indexChild) {
                                     return Padding(
-                                      padding: EdgeInsets.only(left: 25, right: 5.0, top: 5.0),
+                                      padding: EdgeInsets.only(left: 30, right: 5.0, top: 5.0),
                                       child: Container(
                                         width: double.infinity,
                                         alignment: Alignment.center,
@@ -349,7 +392,31 @@ class SurveyState extends State<Survey> {
                                           ),
                                           Container(
                                             alignment: Alignment.center,
-                                            child: Row(children: <Widget>[Text("Beğen (" + survey.childComments[indexChild].likedUsers.length.toString() + ")"), Text(" - "), Text("Yanıtla")],),
+                                            child: Row(children: <Widget>[
+                                              new Expanded(
+                                                child:
+                                              new FlatButton(
+                                                onPressed: () =>  likeUnlikeComment(survey.childComments[indexChild]),
+                                                child: new Container(
+                                                  child: new Row(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: <Widget>[
+                                                      new Expanded(
+                                                        child: Text(
+                                                          "Beğen (" + survey.childComments[indexChild].likedUsers.length.toString() + ")",
+                                                          textAlign: TextAlign.center,
+                                                          style: TextStyle(
+                                                              color: survey.childComments[indexChild].likedByTheUser ? Colors.red : Colors.black,
+                                                              fontWeight: survey.childComments[indexChild].likedByTheUser ? FontWeight.bold : FontWeight.normal),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              )),
+
+                                              Text(" - "), 
+                                              Text("Yanıtla")],),
                                           ),
                                         ]
                                       )

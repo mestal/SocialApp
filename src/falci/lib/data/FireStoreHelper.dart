@@ -311,4 +311,48 @@ class FireStoreHelper {
 
   //   return result;
   // }
+
+  Future likeUnlikeSurveyComment(String surveyId, String commentId, bool likeOrUnlike, String userId) async {
+    var dsComment = _db.collection('News').document(surveyId).collection('Comments').document(commentId);
+    var comment = await dsComment.get();
+    
+    var likedUsers = comment.data['LikedUsers'].toList();
+    if(likeOrUnlike)
+    {
+      if(likedUsers.contains(userId))
+      {
+        return;
+      }
+
+      likedUsers.add(userId);
+      var dataMapForMessage = new Map<String, dynamic>();
+      dataMapForMessage['LikedUsers'] = likedUsers;
+      dsComment.updateData(dataMapForMessage);
+    }
+    else
+    {
+      if(!likedUsers.contains(userId))
+      {
+        return;
+      }
+
+      likedUsers.remove(userId);
+      var dataMapForMessage = new Map<String, dynamic>();
+      dataMapForMessage['LikedUsers'] = likedUsers;
+      dsComment.updateData(dataMapForMessage);
+    }
+  }
+
+  Future AddSurveyComment(String surveyId, String message, String parentId, String userId) async {
+    var dsComment = _db.collection('News').document(surveyId).collection('Comments').document();
+    
+    var dataMap = new Map<String, dynamic>();
+    dataMap['CreateDate'] = Timestamp.fromDate(DateTime.now());
+    dataMap['Message'] = message;
+    dataMap['UserId'] = userId;
+    dataMap['ParentId'] = parentId;
+    dataMap['LikedUsers'] = new List<String>();
+    dsComment.setData(dataMap);
+    
+  }
 }
