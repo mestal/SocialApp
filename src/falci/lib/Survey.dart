@@ -311,6 +311,53 @@ class SurveyState extends State<Survey> {
                                   alignment: Alignment.center,
                                   child: Row(children: <Widget>[Text("Beğen (" + survey.comments[index].likedUsers.length.toString() + ")"), Text(" - "), Text("Yanıtla")],),
                                 ),
+
+                                ListView.builder(
+                                  shrinkWrap: true,
+                                  scrollDirection: Axis.vertical,
+                                  physics: ScrollPhysics(),
+                                  //controller: _scrollController,
+                                  itemCount: survey.childComments.where((a) => a.parentId == survey.comments[index].id).length,
+                                  itemBuilder: (BuildContext ctx, int indexChild) {
+                                    return Padding(
+                                      padding: EdgeInsets.only(left: 25, right: 5.0, top: 5.0),
+                                      child: Container(
+                                        width: double.infinity,
+                                        alignment: Alignment.center,
+                                        child: Column(children: <Widget>[
+                                          Container(
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(survey.childComments[indexChild].userName + ";",
+                                              style: TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              ),),
+                                          ),
+                                          Container(
+                                            alignment: Alignment.bottomLeft,
+                                            child: Text(survey.childComments[indexChild].message),
+                                          ),
+                                          Container(
+                                            alignment: Alignment.bottomLeft,
+                                            child: Text(formatDate(survey.childComments[indexChild].createDate.toDate(), [dd, '-', mm, '-', yyyy, ' ', HH, ':', nn]), 
+                                              textAlign: TextAlign.left, 
+                                              style: TextStyle (
+                                                fontFamily: 'Quicksand' ,
+                                                color: Colors.grey,
+                                                fontSize: 12.0,
+                                              ),
+                                            )
+                                          ),
+                                          Container(
+                                            alignment: Alignment.center,
+                                            child: Row(children: <Widget>[Text("Beğen (" + survey.childComments[indexChild].likedUsers.length.toString() + ")"), Text(" - "), Text("Yanıtla")],),
+                                          ),
+                                        ]
+                                      )
+                                    ),
+                                  );
+                                },
+                              )
+
                               ]
                             )
                           ),

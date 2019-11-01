@@ -304,6 +304,7 @@ class SurveyDetailModel {
   String title;
   List<QuestionModel> questions;
   List<CommentModel> comments;
+  List<CommentModel> childComments;
   List<dynamic> results;
   int likeCount;
   bool likedByUser;
@@ -326,9 +327,13 @@ class SurveyDetailModel {
     }).toList();
     questions.sort((a,b)=> a.no.compareTo(b.no));
 
-    comments = commentsP.map((comment) {
+    comments = commentsP.where((a) => a['ParentId'] == "").map((comment) {
       
-      return CommentModel.map(comment.data, commentUsers);
+      return CommentModel.map(comment.documentID, comment.data, commentUsers);
+    }).toList();
+
+    childComments = commentsP.where((a) => a['ParentId'] != "").map((comment) {
+      return CommentModel.map(comment.documentID, comment.data, commentUsers);
     }).toList();
   }
 }
@@ -362,16 +367,18 @@ class CommentModel {
     Timestamp createDate;
     String userId;
     String userName;
-    List<CommentModel> comments;
     List<dynamic> likedUsers;
+    String parentId;
+    String id;
 
-    CommentModel.map(Map<String, dynamic> map, List<UserModel> commentUsers)
+    CommentModel.map(String documentId, Map<String, dynamic> map, List<UserModel> commentUsers)
     {
-    
+      this.id = documentId;
       message = map['Message'];
       createDate = map['CreateDate'];
       userId = map['UserId'];
       likedUsers = map['LikedUsers'];
+      parentId = map['ParentId'];
       var user = commentUsers.firstWhere((a) => a.userId == userId);
       userName = user.name;
     }
