@@ -15,13 +15,13 @@ class Survey extends StatefulWidget {
   Survey(this.surveyId);
 
   @override
-  State createState() => new SurveyState(surveyId);
+  State createState() => new SurveyState(surveyId); //, this.pageController
 }
 
 class SurveyState extends State<Survey> {
-  
+  Widget _form;
   final String surveyId;
-  TextEditingController _commentController = TextEditingController();
+  final TextEditingController _commentController = TextEditingController();
   // @override
   // initState() async {
   //   var abc = 123;
@@ -32,14 +32,37 @@ class SurveyState extends State<Survey> {
   bool surveyFinished = false;
   int result = -1;
   SurveyDetailModel surveyDetail;
-
+  bool textFieldTapClicked = false;
   SurveyState(this.surveyId);
 
+  void onTapComment()
+  {
+    textFieldTapClicked = true;
+  }
   @override
   void initState() {
     super.initState();
-  
+    _commentController.text = "";
+    textFieldTapClicked = false;
     _scrollController = new ScrollController(initialScrollOffset: scrollPosition, keepScrollOffset: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    
+     
+
+    if (_form == null) {
+      _form = _createForm(context);
+    }
+    if(textFieldTapClicked)
+    {
+      scrollPosition = _scrollController.position.pixels;
+      textFieldTapClicked = false;
+      return _form;
+    }
+    _form = _createForm(context);
+    return _form;
   }
 
   Future<SurveyDetailModel> getSurveyDetail() async
@@ -355,6 +378,34 @@ class SurveyState extends State<Survey> {
                                     Text("Yanıtla")],),
                                 ),
 
+                                new Container(
+                                  // width: MediaQuery.of(context).size.width,
+                                  // margin: const EdgeInsets.only(left: 40.0, right: 40.0, top: 0.0),
+                                  // alignment: Alignment.center,
+                                  // decoration: BoxDecoration(
+                                  //   border: Border(
+                                  //     bottom: BorderSide(
+                                  //         color: Colors.redAccent,
+                                  //         width: 0.5,
+                                  //         style: BorderStyle.solid),
+                                  //   ),
+                                  // ),
+                                  // padding: const EdgeInsets.only(left: 0.0, right: 10.0),
+                                  child: new Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: <Widget>[
+                                      new Expanded(
+                                        child: new TextField(
+                                          controller: _commentController,
+                                          onTap: onTapComment
+                                        )
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+
                                 ListView.builder(
                                   shrinkWrap: true,
                                   scrollDirection: Axis.vertical,
@@ -440,8 +491,8 @@ class SurveyState extends State<Survey> {
       );
     }
 
-    @override
-    Widget build(BuildContext context) {
+    Widget _createForm(BuildContext context) { 
+
       _scrollController = new ScrollController(initialScrollOffset: scrollPosition, keepScrollOffset: true);
       return new Scaffold(
         appBar: AppBar(
