@@ -111,7 +111,7 @@ class SignupState extends State<SignupPage> {
         if (user != null) {
           var userModel = UserModel(
             email: user.email,
-            name: user.displayName != null ? user.displayName : null,
+            name: name != null ? name : null,
             point: 0,
             roleType: RoleType.User.index,
             status: UserStatus.Active.index,

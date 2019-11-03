@@ -343,6 +343,24 @@ class FireStoreHelper {
     }
   }
 
+  Future deleteComment(String surveyId, String commentId) async {
+    var batch = _db.batch();
+    var dsChildComments = await _db.collection('News')
+                              .document(surveyId).collection('Comments')
+                              .where("ParentId", isEqualTo: commentId)
+                              .getDocuments();
+
+    dsChildComments.documents.forEach((a) =>  {
+      batch.delete(a.reference)
+    });
+    
+    batch.commit();
+
+    var dsComment = _db.collection('News').document(surveyId).collection('Comments').document(commentId);
+    dsComment.delete();
+  }
+
+
   Future AddSurveyComment(String surveyId, String message, String parentId, String userId) async {
     var dsComment = _db.collection('News').document(surveyId).collection('Comments').document();
     

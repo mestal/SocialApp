@@ -327,12 +327,12 @@ class SurveyDetailModel {
     }).toList();
     questions.sort((a,b)=> a.no.compareTo(b.no));
 
-    comments = commentsP.where((a) => a['ParentId'] == "").map((comment) {
+    comments = commentsP.where((a) => a['ParentId'] == null || a['ParentId'] == "").map((comment) {
       
       return CommentModel.map(comment.documentID, comment.data, commentUsers, loginUserId);
     }).toList();
 
-    childComments = commentsP.where((a) => a['ParentId'] != "").map((comment) {
+    childComments = commentsP.where((a) => a['ParentId'] != null && a['ParentId'] != "").map((comment) {
       return CommentModel.map(comment.documentID, comment.data, commentUsers, loginUserId);
     }).toList();
   }

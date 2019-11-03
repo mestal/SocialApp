@@ -22,6 +22,7 @@ class SurveyState extends State<Survey> {
   Widget _form;
   final String surveyId;
   final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _mainCommentController = TextEditingController();
   // @override
   // initState() async {
   //   var abc = 123;
@@ -33,6 +34,7 @@ class SurveyState extends State<Survey> {
   int result = -1;
   SurveyDetailModel surveyDetail;
   bool textFieldTapClicked = false;
+  String showCommentTextFieldFor = "";
   SurveyState(this.surveyId);
 
   void onTapComment()
@@ -70,7 +72,7 @@ class SurveyState extends State<Survey> {
     var surveyDocument = Firestore.instance.collection('News').document(surveyId);
     var survey = await surveyDocument.get();
     var questions = await surveyDocument.collection('Questions').getDocuments();
-    var comments = await surveyDocument.collection('Comments').getDocuments();
+    var comments = await surveyDocument.collection('Comments').orderBy("CreateDate").getDocuments();
 
     List<UserModel> users = new List<UserModel>();
     for(int i = 0; i < comments.documents.length; i ++)
@@ -134,11 +136,30 @@ class SurveyState extends State<Survey> {
     });
   }
 
+  void deleteComment(String id)
+  {
+    FireStoreHelper.dbHelper.deleteComment(surveyDetail.id, id);
+    setState(() {
+      scrollPosition = _scrollController.position.pixels;
+    });
+  }
+
+  void openCommentTextField(String parentId)
+  {
+    setState(() {
+      scrollPosition = _scrollController.position.pixels;
+      showCommentTextFieldFor = parentId;
+    });
+  }
+
   void addComment(String message, String parentId)
   {
     FireStoreHelper.dbHelper.AddSurveyComment(surveyDetail.id, message, parentId, AuthSingleton.instance.user.uid);
     setState(() {
       scrollPosition = _scrollController.position.pixels;
+      showCommentTextFieldFor = "";
+      _commentController.text = "";
+      _mainCommentController.text = "";
     });
   }
 
@@ -306,6 +327,47 @@ class SurveyState extends State<Survey> {
                   )
                   :
                   Container(),
+
+                  new Container(
+                    child:
+                      new Column(
+                        children: <Widget>[
+                          new Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: <Widget>[
+                              new Expanded(
+                                child: new TextField(
+                                  controller: _mainCommentController,
+                                  onTap: onTapComment
+                                )
+                              ),
+                            ],
+                          ),
+                          new FlatButton(
+                            onPressed: () =>  addComment(_mainCommentController.text, null),
+                            child: new Container(
+                              child: new Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+                                  new Expanded(
+                                    child: Text(
+                                      "Gönder",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        ],
+                      )
+                  ),
+
+
                   Container(
                     padding: const EdgeInsets.all(10.0),
                     child: 
@@ -354,56 +416,115 @@ class SurveyState extends State<Survey> {
                                   child: Row(children: <Widget>[
                                     new Expanded(
                                       child:
-                                    new FlatButton(
-                                      onPressed: () =>  likeUnlikeComment(survey.comments[index]),
-                                      child: new Container(
-                                        child: new Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: <Widget>[
-                                            new Expanded(
-                                              child: Text(
-                                                "Beğen (" + survey.comments[index].likedUsers.length.toString() + ")",
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                    color: survey.comments[index].likedByTheUser ? Colors.red : Colors.black,
-                                                    fontWeight: survey.comments[index].likedByTheUser ? FontWeight.bold : FontWeight.normal),
-                                              ),
+                                        new FlatButton(
+                                          onPressed: () =>  likeUnlikeComment(survey.comments[index]),
+                                          child: new Container(
+                                            child: new Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: <Widget>[
+                                                new Expanded(
+                                                  child: Text(
+                                                    "Beğen (" + survey.comments[index].likedUsers.length.toString() + ")",
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                        color: survey.comments[index].likedByTheUser ? Colors.red : Colors.black,
+                                                        fontWeight: survey.comments[index].likedByTheUser ? FontWeight.bold : FontWeight.normal),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
-                                      ),
-                                    )),
+                                          ),
+                                        )
+                                    ),
 
                                     Text(" - "), 
-                                    Text("Yanıtla")],),
+                                    new Expanded(
+                                      child:
+                                        new FlatButton(
+                                          onPressed: () =>  openCommentTextField(survey.comments[index].id),
+                                          child: new Container(
+                                            child: new Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: <Widget>[
+                                                new Expanded(
+                                                  child: Text(
+                                                    "Yanıtla",
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                        color: Colors.black,
+                                                        fontWeight: FontWeight.normal),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        )
+                                    ),
+                                    survey.comments[index].userId == AuthSingleton.instance.user.uid ? Text(" - ") : Container(), 
+                                    survey.comments[index].userId == AuthSingleton.instance.user.uid ? new Expanded(
+                                      child:
+                                        new FlatButton(
+                                          onPressed: () =>  deleteComment(survey.comments[index].id),
+                                          child: new Container(
+                                            child: new Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: <Widget>[
+                                                new Expanded(
+                                                  child: Text(
+                                                    "Sil",
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                        color: Colors.black,
+                                                        fontWeight: FontWeight.normal),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        )
+                                    ) : Container(),
+                                    ],),
                                 ),
 
-                                new Container(
-                                  // width: MediaQuery.of(context).size.width,
-                                  // margin: const EdgeInsets.only(left: 40.0, right: 40.0, top: 0.0),
-                                  // alignment: Alignment.center,
-                                  // decoration: BoxDecoration(
-                                  //   border: Border(
-                                  //     bottom: BorderSide(
-                                  //         color: Colors.redAccent,
-                                  //         width: 0.5,
-                                  //         style: BorderStyle.solid),
-                                  //   ),
-                                  // ),
-                                  // padding: const EdgeInsets.only(left: 0.0, right: 10.0),
-                                  child: new Row(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: <Widget>[
-                                      new Expanded(
-                                        child: new TextField(
-                                          controller: _commentController,
-                                          onTap: onTapComment
-                                        )
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                showCommentTextFieldFor == survey.comments[index].id ?
+                                  new Container(
+                                    child:
+                                      new Column(
+                                        children: <Widget>[
+                                          new Row(
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            mainAxisAlignment: MainAxisAlignment.start,
+                                            children: <Widget>[
+                                              new Expanded(
+                                                child: new TextField(
+                                                  controller: _commentController,
+                                                  onTap: onTapComment
+                                                )
+                                              ),
+                                            ],
+                                          ),
+                                          new FlatButton(
+                                            onPressed: () =>  addComment(_commentController.text, survey.comments[index].id),
+                                            child: new Container(
+                                              child: new Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: <Widget>[
+                                                  new Expanded(
+                                                    child: Text(
+                                                      "Gönder",
+                                                      textAlign: TextAlign.center,
+                                                      style: TextStyle(
+                                                          color: Colors.black,
+                                                          fontWeight: FontWeight.normal),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          )
+                                        ],
+                                      )
+                                  ) : Container(),
 
 
                                 ListView.builder(
@@ -413,6 +534,9 @@ class SurveyState extends State<Survey> {
                                   //controller: _scrollController,
                                   itemCount: survey.childComments.where((a) => a.parentId == survey.comments[index].id).length,
                                   itemBuilder: (BuildContext ctx, int indexChild) {
+
+                                    var childComment = survey.childComments.where((a) => a.parentId == survey.comments[index].id).toList()[indexChild];
+
                                     return Padding(
                                       padding: EdgeInsets.only(left: 30, right: 5.0, top: 5.0),
                                       child: Container(
@@ -421,18 +545,18 @@ class SurveyState extends State<Survey> {
                                         child: Column(children: <Widget>[
                                           Container(
                                             alignment: Alignment.centerLeft,
-                                            child: Text(survey.childComments[indexChild].userName + ";",
+                                            child: Text(childComment.userName + ";",
                                               style: TextStyle(
                                               fontWeight: FontWeight.w900,
                                               ),),
                                           ),
                                           Container(
                                             alignment: Alignment.bottomLeft,
-                                            child: Text(survey.childComments[indexChild].message),
+                                            child: Text(childComment.message),
                                           ),
                                           Container(
                                             alignment: Alignment.bottomLeft,
-                                            child: Text(formatDate(survey.childComments[indexChild].createDate.toDate(), [dd, '-', mm, '-', yyyy, ' ', HH, ':', nn]), 
+                                            child: Text(formatDate(childComment.createDate.toDate(), [dd, '-', mm, '-', yyyy, ' ', HH, ':', nn]), 
                                               textAlign: TextAlign.left, 
                                               style: TextStyle (
                                                 fontFamily: 'Quicksand' ,
@@ -446,28 +570,52 @@ class SurveyState extends State<Survey> {
                                             child: Row(children: <Widget>[
                                               new Expanded(
                                                 child:
-                                              new FlatButton(
-                                                onPressed: () =>  likeUnlikeComment(survey.childComments[indexChild]),
-                                                child: new Container(
-                                                  child: new Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
-                                                    children: <Widget>[
-                                                      new Expanded(
-                                                        child: Text(
-                                                          "Beğen (" + survey.childComments[indexChild].likedUsers.length.toString() + ")",
-                                                          textAlign: TextAlign.center,
-                                                          style: TextStyle(
-                                                              color: survey.childComments[indexChild].likedByTheUser ? Colors.red : Colors.black,
-                                                              fontWeight: survey.childComments[indexChild].likedByTheUser ? FontWeight.bold : FontWeight.normal),
-                                                        ),
+                                                  new FlatButton(
+                                                    onPressed: () =>  likeUnlikeComment(childComment),
+                                                    child: new Container(
+                                                      child: new Row(
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        children: <Widget>[
+                                                          new Expanded(
+                                                            child: Text(
+                                                              "Beğen (" + childComment.likedUsers.length.toString() + ")",
+                                                              textAlign: TextAlign.center,
+                                                              style: TextStyle(
+                                                                  color: childComment.likedByTheUser ? Colors.red : Colors.black,
+                                                                  fontWeight: childComment.likedByTheUser ? FontWeight.bold : FontWeight.normal),
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
-                                                    ],
-                                                  ),
+                                                    ),
+                                                  )
                                                 ),
-                                              )),
 
-                                              Text(" - "), 
-                                              Text("Yanıtla")],),
+                                                childComment.userId == AuthSingleton.instance.user.uid ? Text(" - ") : Container(), 
+                                                  childComment.userId == AuthSingleton.instance.user.uid ? new Expanded(
+                                                    child:
+                                                      new FlatButton(
+                                                        onPressed: () =>  deleteComment(childComment.id),
+                                                        child: new Container(
+                                                          child: new Row(
+                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                            children: <Widget>[
+                                                              new Expanded(
+                                                                child: Text(
+                                                                  "Sil",
+                                                                  textAlign: TextAlign.center,
+                                                                  style: TextStyle(
+                                                                      color: Colors.black,
+                                                                      fontWeight: FontWeight.normal),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      )
+                                                  ) : Container(),
+                                              ]
+                                            ),
                                           ),
                                         ]
                                       )
